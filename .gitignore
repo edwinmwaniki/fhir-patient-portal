@@ -25,6 +25,7 @@ local_settings.py
 .idea/
 .vscode/
 .DS_Store
+.github/copilot-instructions.md
 
 # Testing / coverage
 .pytest_cache/
