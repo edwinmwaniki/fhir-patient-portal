@@ -1,0 +1,6 @@
+# Development-only dependencies. Kept separate so the runtime image stays
+# lean; installed in CI and in local dev shells.
+-r requirements.txt
+
+pytest>=8.0,<9.0
+pytest-django>=4.8,<5.0

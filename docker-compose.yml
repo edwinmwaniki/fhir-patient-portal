@@ -1,0 +1,77 @@
+# docker-compose for local development of the FHIR Patient Portal.
+#
+# Secrets live exclusively in the `.env` file (see `.env.example`); nothing
+# sensitive is committed to source control. In production these values are
+# expected to come from the orchestrator's secret store, not a .env file.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Only expose Postgres on the internal Docker network by default. Uncomment
+    # the `ports` block below if a host-side client (psql, DBeaver) is needed.
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # `env_file` scopes secrets to this service and keeps them out of the
+    # compose file itself. Individual overrides may be set under `environment`.
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    # `expose` publishes 8000 only on the internal Docker network; Nginx
+    # is the single ingress point on the host. Comment `expose` and add a
+    # `ports` block below when directly hitting Gunicorn from the host is
+    # useful for debugging.
+    expose:
+      - "8000"
+    volumes:
+      # Bind-mount source for hot reload during development. Remove for prod.
+      - .:/app
+      # Shared static volume: web writes here via collectstatic, Nginx
+      # reads it to serve /static/.
+      - static_data:/app/staticfiles
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn fhir_portal.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile -"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "${NGINX_HOST_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Django static files (admin, DRF browsable API assets).
+      - static_data:/app/staticfiles:ro
+      # Built Angular SPA. Angular's `application` builder emits to
+      # `dist/<project>/browser/` — point Nginx at that subdirectory so
+      # `index.html` sits at the web root. Swap this back to
+      # `./frontend/placeholder` if you haven't run `npm run build` yet.
+      - ./frontend/dist/browser:/usr/share/nginx/html:ro
+
+volumes:
+  postgres_data:
+    driver: local
+  static_data:
+    driver: local

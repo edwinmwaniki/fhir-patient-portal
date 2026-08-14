@@ -1,0 +1,16 @@
+# Core framework
+Django>=5.0,<5.2
+djangorestframework>=3.15,<3.16
+
+# PostgreSQL driver (binary wheel keeps the image slim; swap for psycopg2
+# if compiling against a system libpq is required).
+psycopg2-binary>=2.9,<3.0
+
+# Production WSGI server used by the container CMD.
+gunicorn>=22.0,<23.0
+
+# FHIR R4 resource validation via pydantic models.
+fhir.resources>=7.1,<8.0
+
+# OpenAPI 3 schema + Swagger UI / Redoc for the DRF API.
+drf-spectacular>=0.27,<0.29
