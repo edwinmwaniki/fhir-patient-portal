@@ -10,6 +10,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
       <h1>FHIR Patient Portal</h1>
       <nav>
         <a routerLink="/patients" routerLinkActive="active">Patients</a>
+        <a routerLink="/appointments" routerLinkActive="active">Appointments</a>
       </nav>
     </header>
     <main class="container">

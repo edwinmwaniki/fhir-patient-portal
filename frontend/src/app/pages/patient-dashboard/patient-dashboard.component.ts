@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 
 import { FhirPatient } from '../../models/fhir';
 import { FhirService } from '../../services/fhir.service';
+import { RouterLink } from '@angular/router';
 
 /**
  * Minimal patient dashboard: fetches `/api/fhir/v1/Patient/`, renders the
@@ -10,12 +11,15 @@ import { FhirService } from '../../services/fhir.service';
  * error state without any UI framework dependency.
  */
 @Component({
-  selector: 'app-patient-dashboard',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-patient-dashboard',
+    standalone: true,
+    imports: [CommonModule, RouterLink],
+    template: `
     <section>
-      <h2>Patients</h2>
+        <div class="flex justify-between items-center">
+            <h2>Patients</h2>
+            <a routerLink="/patients/new" class="button">Create Patient</a>
+        </div>
 
       @if (loading()) {
         <p class="muted">Loading patients…</p>
@@ -46,44 +50,44 @@ import { FhirService } from '../../services/fhir.service';
       }
     </section>
   `,
-  styles: [
-    `
+    styles: [
+        `
       ul.reset {
         list-style: none;
         padding: 0;
         margin: 0;
       }
     `,
-  ],
+    ],
 })
 export class PatientDashboardComponent implements OnInit {
-  private readonly fhir = inject(FhirService);
+    private readonly fhir = inject(FhirService);
 
-  readonly patients = signal<FhirPatient[]>([]);
-  readonly loading = signal<boolean>(true);
-  readonly error = signal<string | null>(null);
+    readonly patients = signal<FhirPatient[]>([]);
+    readonly loading = signal<boolean>(true);
+    readonly error = signal<string | null>(null);
 
-  ngOnInit(): void {
-    this.fhir.listPatients().subscribe({
-      next: (patients) => {
-        this.patients.set(patients);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.message ?? 'Unknown error');
-        this.loading.set(false);
-      },
-    });
-  }
-
-  displayName(patient: FhirPatient): string {
-    const primary = patient.name?.[0];
-    if (!primary) {
-      return patient.id ?? 'Unnamed patient';
+    ngOnInit(): void {
+        this.fhir.listPatients().subscribe({
+            next: (patients) => {
+                this.patients.set(patients);
+                this.loading.set(false);
+            },
+            error: (err) => {
+                this.error.set(err?.message ?? 'Unknown error');
+                this.loading.set(false);
+            },
+        });
     }
-    const given = (primary.given ?? []).join(' ').trim();
-    const family = primary.family ?? '';
-    const display = `${given} ${family}`.trim();
-    return display || (patient.id ?? 'Unnamed patient');
-  }
+
+    displayName(patient: FhirPatient): string {
+        const primary = patient.name?.[0];
+        if (!primary) {
+            return patient.id ?? 'Unnamed patient';
+        }
+        const given = (primary.given ?? []).join(' ').trim();
+        const family = primary.family ?? '';
+        const display = `${given} ${family}`.trim();
+        return display || (patient.id ?? 'Unnamed patient');
+    }
 }

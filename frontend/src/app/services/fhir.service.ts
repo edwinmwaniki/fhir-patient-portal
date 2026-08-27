@@ -42,4 +42,8 @@ export class FhirService {
       .get<FhirBundle<FhirAppointment>>(`${this.baseUrl}/Appointment/`)
       .pipe(map((bundle) => (bundle.entry ?? []).map((e) => e.resource)));
   }
+
+  createAppointment(appointment: FhirAppointment): Observable<FhirAppointment> {
+    return this.http.post<FhirAppointment>(`${this.baseUrl}/Appointment/`, appointment);
+  }
 }
